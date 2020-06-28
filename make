@@ -1,2 +1,2 @@
 #!/bin/bash
-make -f build.mk -j4 "$@"
+gmake -f build.mk -j12 "$@"

@@ -121,8 +121,6 @@ AX_CFLAGS_WARN_ALL
 AX_CXXFLAGS_WARN_ALL
 AX_FLAGS_WARN_ALL
 
-CY_TEST_FLAG([-Werror])
-
 dnl XXX: this is used to support GNU Objective-C struct objc_method
 CY_TEST_FLAG([-Wno-deprecated-declarations])
 
@@ -320,8 +318,6 @@ CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
 AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
 CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap ncurses])])
-
-AC_SUBST([LTLIBGCC])
 
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])

@@ -59,58 +59,46 @@ function configure() {
     mkdir build."${dir}"
     cd build."${dir}"
 
-    if "${ffi}"; then
-        cpf+=" -I../libffi.${arch}/include"
-        ldf+=" -L../libffi.${arch}/.libs"
-    fi
-
     cpf+=" -I../libuv/include"
-    ldf+=" -L../libuv.${arch}/.libs"
+
+    cpf+=" -I../libffi.${arch}/include"
+    ldf+=" -L../libffi.${arch}/.libs"
 
     ../configure --enable-maintainer-mode "${flags[@]}" --prefix="/usr" "$@" \
         --with-libclang="-rpath ${xct} ${xct}/libclang.dylib" \
         CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \
         CFLAGS="${ccf[*]}" CXXFLAGS="${ccf[*]}" OBJCXXFLAGS="${ccf[*]} ${obc}" \
-        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" CY_SYSTEM="$((1<<system++))"
+        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" LTLIBREADLINE="../readline.${arch}/.libs/libreadline.a" CY_SYSTEM="$((1<<system++))"
 
     cd ..
 }
 
-for arch in i386 x86_64; do
-    configure "osx-${arch}" "${mac}" "${arch}" "-mmacosx-version-min=10.6" \
-        false "-I../readline.osx" "-L../readline.osx" "" \
-        --with-python=/usr/bin/python-config
-done
+#for arch in  x86_64; do
+#    configure "osx-${arch}" "${mac}" "${arch}" "-mmacosx-version-min=10.6" \
+#        false "-I../readline.osx" "-L../readline.osx" "" \
+#        --with-python=/usr/bin/python-config
+#done
 
-for arch in i386 x86_64; do
-    configure "sim-${arch}" iphonesimulator "${arch}" "-mios-simulator-version-min=4.0" \
-        true "" "" "-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
-        --disable-console
-done
+#for arch in  x86_64; do
+#    configure "sim-${arch}" iphonesimulator "${arch}" "-mios-simulator-version-min=4.0" \
+#        true "" "" "-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
+#        --disable-console
+#done
 
-for arch in armv6 armv7 armv7s arm64; do
+for arch in arm64 arm64e; do
     cpf=""
     ldf=""
 
     flg=()
-    if [[ ${arch} == arm64 ]]; then
-        cpf+=" -I../extra.${arch}"
-        cpf+=" -I../readline.${arch}"
-        ldf+=" -L../readline.${arch}"
-    elif [[ ${arch} != armv6 ]]; then
-        flg+=(--disable-console)
-    else
-        flg+=(LTLIBGCC="-lgcc_s.1")
-        cpf+=" -include ${PWD}/xcode.h"
-        cpf+=" -mllvm -arm-reserve-r9"
-        cpf+=" -I../sysroot.ios/usr/include"
-        ldf+=" -L../sysroot.ios/usr/lib"
-    fi
+    cpf+=" -I../extra.${arch}"
+    cpf+=" -I../readline.${arch}"
+    cpf+=" -I../sysroot.ios/usr/include"
+    ldf+=" -L../readline.${arch}/.libs"
 
     ldf+=" -Wl,-dead_strip"
     ldf+=" -Wl,-no_dead_strip_inits_and_terms"
 
-    if [[ ${arch} == arm64 ]]; then
+    if [[ ${arch} == arm64 ]] || [[ ${arch} == arm64e ]]; then
         min=7.0
     else
         min=2.0
@@ -118,7 +106,7 @@ for arch in armv6 armv7 armv7s arm64; do
         #cpf+=" -mthumb"
     fi
 
-    configure "ios-${arch}" iphoneos "${arch}" "-miphoneos-version-min=${min}" \
+    PATH="$(brew --prefix)/opt/bison/bin:$PATH" configure "ios-${arch}" iphoneos "${arch}" "-miphoneos-version-min=${min}" \
         true "${cpf[*]}" "${ldf[*]}" "" \
-        --host=arm-apple-darwin10 LFLAGS="--ecs --meta-ecs" "${flg[@]}"
+        --host=aarch64-apple-darwin LFLAGS="--ecs --meta-ecs" "${flg[@]}"
 done

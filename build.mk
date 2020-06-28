@@ -21,36 +21,32 @@
 .DELETE_ON_ERROR:
 SHELL := /bin/bash
 
-include codesign.mk
+ifneq (,$(wildcard $(shell brew --prefix)/opt/bison/bin))
+PATH := $(shell brew --prefix)/opt/bison/bin:$(PATH)
+else ifeq ($(shell bison --version | grep -q '(GNU Bison) 2' && echo 1),1)
+$(error Install newer bison)
+endif
 
 lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
 monotonic := $(shell git log -1 --pretty=format:%ct)
-version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@;s@%@~@g')
+version := 0.9.594-procursus1
 
 deb := cycript_$(version)_iphoneos-arm.deb
 zip := cycript_$(version).zip
 
 cycript := 
 cycript += Cycript.lib/cycript-apl
-cycript += Cycript.lib/cycript-a32
-cycript += Cycript.lib/libcycript.so
 cycript += Cycript.lib/cycript0.9
 cycript += Cycript.lib/libcycript.dylib
-cycript += Cycript.lib/libcycript-sys.dylib
-cycript += Cycript.lib/libcycript-sim.dylib
 cycript += Cycript.lib/libcycript.cy
 cycript += Cycript.lib/libcycript.db
-cycript += Cycript.lib/libcycript.jar
-cycript += Cycript.lib/libJavaScriptCore.so
-cycript += Cycript.lib/l/linux
-cycript += Cycript.lib/u/unknown
 
 framework := 
 framework += Cycript
 framework += Headers/Cycript.h
 
-framework := $(foreach os,ios osx,$(foreach file,$(framework),Cycript.$(os)/Cycript.framework/$(file)))
+framework := $(foreach os,ios,$(foreach file,$(framework),Cycript.$(os)/Cycript.framework/$(file)))
 
 links := 
 links += Cycript.lib/cynject
@@ -59,7 +55,6 @@ links += Cycript.lib/libsubstrate.dylib
 links += Cycript.lib/cycript0.9
 
 data := 
-data += Cycript.lib/libcycript.jar
 data += Cycript.lib/libcycript.db
 data += Cycript.lib/libcycript.cy
 
@@ -94,14 +89,13 @@ $(deb): Cycript.lib/cycript-apl Cycript.lib/libcycript.dylib Cycript.lib/libcycr
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
 	cp -a cycript0.9 package/usr/lib/cycript0.9
-	$(lipo) -extract armv6 -extract arm64 -output package/usr/bin/cycript Cycript.lib/cycript-apl
-	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
+	$(lipo) -extract arm64 -extract arm64e -output package/usr/bin/cycript Cycript.lib/cycript-apl
+	$(lipo) -extract arm64 -extract arm64e -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	cp -a libcycript.cy package/usr/lib/libcycript.cy
-	cp -a Cycript.lib/libcycript.jar package/usr/lib/libcycript.jar
 	cp -a Cycript.lib/libcycript.db package/usr/lib/libcycript.db
 	sqlite3 package/usr/lib/libcycript.db "delete from cache where system & $$(($$(cat build.ios-arm{v6,64}/Makefile | sed -e '/^CY_SYSTEM = \([0-9]*\)$$/{s//\1/;p;};d;' | tr $$'\n' '|') 0)) == 0; vacuum full;"
-	./dpkg-deb.sh -Zlzma -b package $@
+	dpkg-deb -b package $@
 
 deb: $(deb)
 	ln -sf $< cycript.deb
@@ -143,42 +137,42 @@ build.$(1)-$(2)/.libs/libcycript.dylib: build-$(1)-$(2)
 	@
 endef
 
-define build_osx
-$(call build_any,osx,$(1))
-$(call build_lib,osx,$(1))
-build.osx-$(1)/.libs/cycript: build-osx-$(1)
-	@
-build.osx-$(1)/libcycript.jar: build-osx-$(1)
-	@
-endef
+#define build_osx
+#$(call build_any,osx,$(1))
+#$(call build_lib,osx,$(1))
+#build.osx-$(1)/.libs/cycript: build-osx-$(1)
+#	@
+#build.osx-$(1)/libcycript.jar: build-osx-$(1)
+#	@
+#endef
 
-$(foreach arch,i386 x86_64,$(eval $(call build_osx,$(arch))))
+#$(foreach arch,i386 x86_64,$(eval $(call build_osx,$(arch))))
 
 define build_ios
 $(call build_any,ios,$(1))
 endef
 
-$(foreach arch,armv6 armv7 armv7s arm64,$(eval $(call build_ios,$(arch))))
+$(foreach arch,arm64 arm64e,$(eval $(call build_ios,$(arch))))
 
-define build_sim
-$(call build_any,sim,$(1))
-$(call build_lib,sim,$(1))
-endef
-
-$(foreach arch,i386 x86_64,$(eval $(call build_sim,$(arch))))
+#define build_sim
+#$(call build_any,sim,$(1))
+#$(call build_lib,sim,$(1))
+#endef
+#
+#$(foreach arch,i386 x86_64,$(eval $(call build_sim,$(arch))))
 
 define build_arm
 build.ios-$(1)/.libs/cycript: build-ios-$(1)
 	@
 endef
 
-$(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
+$(foreach arch,arm64 arm64e,$(eval $(call build_arm,$(arch))))
 
 define build_arm
 $(call build_lib,ios,$(1))
 endef
 
-$(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
+$(foreach arch,arm64 arm64e,$(eval $(call build_arm,$(arch))))
 
 define build_and
 .PHONY: build-and-$(1)
@@ -198,7 +192,7 @@ build.and-$(1)/libcycript.db: build-and-$(1)
 	@
 endef
 
-$(foreach arch,armeabi,$(eval $(call build_and,$(arch))))
+#$(foreach arch,armeabi,$(eval $(call build_and,$(arch))))
 
 clean += $(patsubst %,%.a,$(library))
 $(patsubst %,%.a,$(library)):
@@ -208,11 +202,11 @@ $(patsubst %,%.a,$(library)):
 clean: $(clean)
 	rm -rf cycript Cycript.lib libcycript*.o
 
-Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
+Cycript.lib/libcycript.dylib: build.ios-arm64/.libs/libcycript.dylib build.ios-arm64e/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
-	codesign -s $(codesign) $@
+	ldid -S $@
 
 Cycript.lib/libcycript.so: build.and-armeabi/.libs/libcycript.so
 	@mkdir -p $(dir $@)
@@ -233,9 +227,9 @@ Cycript.lib/cycript-pie: build.and-armeabi/cycript-pie
 %_: %
 	@cp -af $< $@
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
-	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
+	ldid -Scycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript.lib/cycript-apl: build.osx-i386/.libs/cycript_ build.osx-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_ build.ios-arm64/.libs/cycript_
+Cycript.lib/cycript-apl: build.ios-arm64/.libs/cycript_ build.ios-arm64e/.libs/cycript_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
@@ -260,10 +254,7 @@ libcycript-%.o: build.%/.libs/libcycript.a $(patsubst %,%.a,$(library)) xcode.ma
 	@mkdir -p $(dir $@)
 	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load -exported_symbols_list xcode.map -x $(filter %.a,$^)
 
-libcycript-ios.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
-	$(lipo) -create -output $@ $^
-
-libcycript-osx.o: libcycript-osx-i386.o libcycript-osx-x86_64.o
+libcycript-ios.o: libcycript-ios-arm64.o libcycript-ios-arm64e.o
 	$(lipo) -create -output $@ $^
 
 Cycript.%/Cycript.framework/Cycript: libcycript-%.o

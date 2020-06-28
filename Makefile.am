@@ -55,7 +55,7 @@ lib_LTLIBRARIES =
 
 lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) $(LTLIBGCC) -ldl
+libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) -ldl
 
 libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Error.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
 libcycript_la_SOURCES += Parser.cpp Scanner.cpp
@@ -65,7 +65,7 @@ filters =
 if CY_CONSOLE
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp
-cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
+cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(PTHREAD_CFLAGS) -ldl
 libcycript_la_SOURCES += Complete.cpp
 
 if CY_EXECUTE
@@ -180,7 +180,7 @@ Parser.cpp: Parser.hpp
 
 CLEANFILES += Parser.cpp Parser.hpp stack.hh Parser.output
 Parser.hpp: Parser.ypp
-	$(BISON) -v --report=state -Werror -o Parser.cpp $<
+	$(BISON) -v --report=state -o Parser.cpp $<
 	! grep -n '^State [0-9]* conflicts:' Parser.output
 	! grep -n '^ *.* *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output | grep -v '$$default'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'

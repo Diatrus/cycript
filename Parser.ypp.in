@@ -244,7 +244,7 @@ type; })
 //%glr-parser
 //%expect 1
 
-%error-verbose
+%define parse.error verbose
 
 %param { CYDriver &driver }
 

@@ -63,21 +63,22 @@ function arch64() {
     local lib=$1
     shift
 
-    arch "${lib}" arm64 aarch64-apple-darwin11 iphoneos iphoneos 2.0 "$@"
+    arch "${lib}" arm64 aarch64-apple-darwin iphoneos iphoneos 11.0 "$@"
+}
+
+function arch64e() {
+    local lib=$1
+    shift
+
+    arch "${lib}" arm64e aarch64-apple-darwin iphoneos iphoneos 11.0 "$@"
 }
 
 function archs() {
     local lib=$1
     shift
 
-    arch "${lib}" armv6 arm-apple-darwin10 iphoneos iphoneos 2.0 "$@" -mllvm -arm-reserve-r9
-    arch "${lib}" armv7 arm-apple-darwin10 iphoneos iphoneos 2.0 "$@"
-    arch "${lib}" armv7s arm-apple-darwin10 iphoneos iphoneos 2.0 "$@"
-
     arch64 "${lib}" "$@"
-
-    arch "${lib}" i386 i386-apple-darwin10 iphonesimulator ios-simulator 4.0 "$@"
-    arch "${lib}" x86_64 x86_64-apple-darwin11 iphonesimulator ios-simulator 4.0 "$@"
+    arch64e "${lib}" "$@"
 }
 
 archs libffi -DPAGE_MAX_SIZE=16384 -DPAGE_MAX_SHIFT=14 -fno-stack-protector

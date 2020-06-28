@@ -24,10 +24,10 @@ set -e
 rm -rf sysroot.ios
 mkdir -p sysroot.ios
 
-for deb in ncurses_5.7-12 readline_6.0-7; do
+for deb in libffi_3.3 ncurses_6.2 readline_8.0.4; do
     deb=${deb}_iphoneos-arm.deb
-    [[ -f "${deb}" ]] || wget http://apt.saurik.com/debs/"${deb}"
-    tar=data.tar.lzma
+    [[ -f "${deb}" ]] || wget https://apt.procurs.us/pool/main/iphoneos-arm64/1600/"${deb}"
+    tar=data.tar.xz
     ar -x "${deb}" "${tar}"
     PATH=/sw/bin:$PATH tar -C sysroot.ios -xf "${tar}"
     rm -f "${tar}"

@@ -50,3 +50,4 @@ Cycript.lib
 DerivedCoreProperties.txt
 PropList.txt
 node_modules
+config.h.in~
